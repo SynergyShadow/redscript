@@ -1,34 +1,27 @@
-name: CI
+name: Build redscript CI
 
 on:
   push:
-    branches: ["*.*.x"]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  check:
-    uses: ./.github/workflows/check.yml
-
   build:
-    uses: ./.github/workflows/build.yml
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - windows-latest
-          - macos-14
         include:
           - os: windows-latest
             suffix: windows
-          - os: macos-14
+          - os: macos-latest
             suffix: macos
+          - os: ubuntu-latest
+            suffix: linux
+
+    uses: ./.github/workflows/build.yml
     with:
       os: ${{ matrix.os }}
       suffix: ${{ matrix.suffix }}
