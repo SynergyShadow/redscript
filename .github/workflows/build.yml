@@ -46,9 +46,7 @@ jobs:
         shell: pwsh
         run: |
           $stagingDir = Join-Path $env:RUNNER_TEMP 'redscript-staging'
-          .\resources\package.ps1 `
-            -stagingDir $stagingDir `
-            -archiveName "$env:ARCHIVE_NAME"
+          .\resources\package.ps1 -stagingDir "$stagingDir" -archiveName "$env:ARCHIVE_NAME"
 
       - name: Package on Linux and macOS
         if: ${{ inputs.os != 'windows-latest' }}
@@ -91,6 +89,7 @@ jobs:
         with:
           name: artifact-${{ inputs.os }}
           path: |
-            ${{ runner.temp }}/redscript-staging/**
+            redscript-*.zip
             ${{ env.ARCHIVE_NAME }}
+            ${{ github.workspace }}/redscript-cli*
           if-no-files-found: error
