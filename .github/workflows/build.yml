@@ -23,7 +23,6 @@ jobs:
 
     env:
       ARCHIVE_NAME: redscript-${{ github.ref_type == 'tag' && github.ref_name || github.sha }}-${{ inputs.suffix }}.zip
-      STAGING_DIR: ${{ runner.temp }}/redscript-staging
 
     steps:
       - name: Checkout repository
@@ -46,15 +45,16 @@ jobs:
         if: ${{ inputs.os == 'windows-latest' }}
         shell: pwsh
         run: |
+          $stagingDir = Join-Path $env:RUNNER_TEMP 'redscript-staging'
           .\resources\package.ps1 `
-            -stagingDir "$env:STAGING_DIR" `
+            -stagingDir $stagingDir `
             -archiveName "$env:ARCHIVE_NAME"
 
-      - name: Package on Unix
+      - name: Package on Linux and macOS
         if: ${{ inputs.os != 'windows-latest' }}
         shell: bash
         run: |
-          ./resources/package.sh "$STAGING_DIR" "$ARCHIVE_NAME"
+          ./resources/package.sh "$RUNNER_TEMP/redscript-staging" "$ARCHIVE_NAME"
 
       - name: Verify packaged outputs
         id: outputs
@@ -62,6 +62,8 @@ jobs:
         env:
           ARTIFACT_SUFFIX: ${{ inputs.suffix }}
         run: |
+          $stagingDir = Join-Path $env:RUNNER_TEMP 'redscript-staging'
+
           $cli = switch ($env:ARTIFACT_SUFFIX) {
             'windows' { 'redscript-cli.exe' }
             'macos'   { 'redscript-cli-aarch64-darwin' }
@@ -69,7 +71,7 @@ jobs:
             default   { throw "Unsupported artifact suffix: $env:ARTIFACT_SUFFIX" }
           }
 
-          $cliPath = Join-Path $env:STAGING_DIR $cli
+          $cliPath = Join-Path $stagingDir $cli
           $archivePath = Join-Path $env:GITHUB_WORKSPACE $env:ARCHIVE_NAME
 
           foreach ($path in @($cliPath, $archivePath)) {
@@ -89,6 +91,6 @@ jobs:
         with:
           name: artifact-${{ inputs.os }}
           path: |
-            ${{ runner.temp }}/redscript-staging/${{ steps.outputs.outputs.cli }}
+            ${{ runner.temp }}/redscript-staging/**
             ${{ env.ARCHIVE_NAME }}
           if-no-files-found: error
